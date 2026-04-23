@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0f1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QR PDF" />
+  <link rel="manifest" href="manifest.json" />
+  <title>QR Scanner PDF</title>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── SCANNER SCREEN ── */
+    #scanner-screen {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #canvas { display: none; }
+
+    /* dark vignette overlay */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center,
+        transparent 45%,
+        rgba(0,0,0,0.72) 100%);
+      pointer-events: none;
+    }
+
+    /* top bar */
+    .top-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px 20px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+      z-index: 10;
+    }
+    .top-bar h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    /* scanning frame */
+    .scan-frame {
+      position: relative;
+      width: min(65vw, 65vh);
+      height: min(65vw, 65vh);
+      z-index: 10;
+    }
+
+    .scan-frame::before, .scan-frame::after,
+    .corner-br, .corner-bl {
+      content: '';
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-color: #fff;
+      border-style: solid;
+    }
+    .scan-frame::before  { top: 0;    left: 0;  border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+    .scan-frame::after   { top: 0;    right: 0; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+    .corner-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
+    .corner-bl { bottom: 0; left: 0;  border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+
+    /* animated laser line */
+    .laser {
+      position: absolute;
+      left: 6px; right: 6px;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--accent), transparent);
+      box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent);
+      border-radius: 2px;
+      animation: scan 2.4s ease-in-out infinite;
+      top: 6px;
+    }
+    @keyframes scan {
+      0%   { top: 6px;   opacity: 1; }
+      45%  { top: calc(100% - 8px); opacity: 1; }
+      50%  { top: calc(100% - 8px); opacity: 0.3; }
+      95%  { top: 6px;   opacity: 1; }
+      100% { top: 6px;   opacity: 1; }
+    }
+
+    /* flash on detect */
+    .scan-frame.detected {
+      animation: flash 0.35s ease-out;
+    }
+    @keyframes flash {
+      0%   { filter: drop-shadow(0 0 0px transparent); }
+      40%  { filter: drop-shadow(0 0 18px #4ade80); }
+      100% { filter: drop-shadow(0 0 0px transparent); }
+    }
+    .scan-frame.detected::before,
+    .scan-frame.detected::after,
+    .scan-frame.detected .corner-br,
+    .scan-frame.detected .corner-bl {
+      border-color: #4ade80;
+      transition: border-color 0.15s;
+    }
+
+    /* bottom hint */
+    .hint {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 20px 24px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+      z-index: 10;
+    }
+    .hint p {
+      font-size: 0.95rem;
+      opacity: 0.7;
+      text-align: center;
+    }
+
+    #status-msg {
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 6px 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.12);
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s;
+    }
+    #status-msg.ok  { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.4); color: #4ade80; }
+    #status-msg.err { background: rgba(255,101,132,0.15); border-color: rgba(255,101,132,0.4); color: var(--accent2); }
+
+    /* ── PERMISSION SCREEN ── */
+    #permission-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 40px;
+      text-align: center;
+    }
+    #permission-screen.visible { display: flex; }
+
+    .perm-icon {
+      font-size: 4.5rem;
+      line-height: 1;
+    }
+    #permission-screen h2 { font-size: 1.5rem; font-weight: 700; }
+    #permission-screen p  { font-size: 1rem; opacity: 0.65; line-height: 1.6; max-width: 360px; }
+
+    .btn-primary {
+      padding: 14px 40px;
+      border-radius: 50px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 24px rgba(108,99,255,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:active {
+      transform: scale(0.96);
+      box-shadow: 0 2px 12px rgba(108,99,255,0.3);
+    }
+
+    /* ── PDF POPUP OVERLAY ── */
+    #pdf-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(4px);
+      flex-direction: column;
+      animation: fadeIn 0.25s ease;
+    }
+    #pdf-overlay.visible { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* close button */
+    #close-btn {
+      position: absolute;
+      top: max(20px, env(safe-area-inset-top, 20px));
+      right: 20px;
+      z-index: 300;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.15s;
+    }
+    #close-btn:hover  { background: rgba(255,255,255,0.22); }
+    #close-btn:active { transform: scale(0.9); }
+
+    /* pdf container */
+    #pdf-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: max(80px, calc(env(safe-area-inset-top, 0px) + 80px)) 0 max(20px, env(safe-area-inset-bottom, 20px));
+    }
+
+    #pdf-frame {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    /* fallback if iframe fails */
+    #pdf-fallback {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      text-align: center;
+      padding: 40px;
+    }
+    #pdf-fallback.visible { display: flex; }
+    #pdf-fallback .fallback-icon { font-size: 4rem; }
+    #pdf-fallback h3 { font-size: 1.3rem; font-weight: 600; }
+    #pdf-fallback p  { opacity: 0.6; line-height: 1.6; max-width: 340px; }
+    #open-pdf-btn {
+      padding: 13px 36px;
+      border-radius: 50px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    /* loading spinner in overlay */
+    #pdf-loader {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.5);
+      z-index: 5;
+      transition: opacity 0.3s;
+    }
+    #pdf-loader.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255,255,255,0.15);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- ── PERMISSION SCREEN ── -->
+  <div id="permission-screen" class="visible">
+    <div class="perm-icon">📷</div>
+    <h2>Acceso a la cámara</h2>
+    <p>Para escanear los códigos QR necesitamos acceder a la cámara de tu dispositivo.</p>
+    <button class="btn-primary" id="request-cam-btn">Activar cámara</button>
+  </div>
+
+  <!-- ── SCANNER SCREEN ── -->
+  <div id="scanner-screen">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="canvas"></canvas>
+
+    <div class="vignette"></div>
+
+    <div class="top-bar">
+      <h1>Escaner QR</h1>
+    </div>
+
+    <div class="scan-frame" id="scan-frame">
+      <div class="corner-br"></div>
+      <div class="corner-bl"></div>
+      <div class="laser"></div>
+    </div>
+
+    <div class="hint">
+      <p>Apunta la cámara hacia uno de los 8 códigos QR</p>
+      <div id="status-msg">Buscando código QR…</div>
+    </div>
+  </div>
+
+  <!-- ── PDF POPUP OVERLAY ── -->
+  <div id="pdf-overlay">
+    <button id="close-btn" aria-label="Cerrar">✕</button>
+
+    <div id="pdf-loader">
+      <div class="spinner"></div>
+    </div>
+
+    <div id="pdf-container">
+      <iframe id="pdf-frame" title="Documento PDF"></iframe>
+      <div id="pdf-fallback">
+        <div class="fallback-icon">📄</div>
+        <h3>PDF no embebible</h3>
+        <p>Tu navegador no puede mostrar este PDF directamente. Ábrelo con el botón de abajo.</p>
+        <a id="open-pdf-btn" target="_blank" rel="noopener">Abrir PDF</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- jsQR library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+
+  <script>
+    // ── Elements ──
+    const permScreen   = document.getElementById('permission-screen');
+    const requestBtn   = document.getElementById('request-cam-btn');
+    const video        = document.getElementById('video');
+    const canvas       = document.getElementById('canvas');
+    const ctx          = canvas.getContext('2d', { willReadFrequently: true });
+    const scanFrame    = document.getElementById('scan-frame');
+    const statusMsg    = document.getElementById('status-msg');
+    const pdfOverlay   = document.getElementById('pdf-overlay');
+    const pdfFrame     = document.getElementById('pdf-frame');
+    const pdfFallback  = document.getElementById('pdf-fallback');
+    const pdfLoader    = document.getElementById('pdf-loader');
+    const openPdfBtn   = document.getElementById('open-pdf-btn');
+    const closeBtn     = document.getElementById('close-btn');
+
+    // ── State ──
+    let scanning       = false;
+    let lastQR         = '';
+    let lastQRTime     = 0;
+    const COOLDOWN_MS  = 3000;  // ms before same QR re-triggers
+    let rafId          = null;
+
+    // ── PWA Service Worker ──
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () =>
+        navigator.serviceWorker.register('./sw.js').catch(console.warn)
+      );
+    }
+
+    // ── Camera ──
+    requestBtn.addEventListener('click', startCamera);
+
+    async function startCamera() {
+      requestBtn.disabled = true;
+      requestBtn.textContent = 'Iniciando…';
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width:  { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+        video.srcObject = stream;
+        video.addEventListener('loadedmetadata', () => {
+          permScreen.classList.remove('visible');
+          scanning = true;
+          setStatus('Buscando código QR…', '');
+          requestAnimationFrame(tick);
+        });
+      } catch (err) {
+        requestBtn.disabled = false;
+        requestBtn.textContent = 'Reintentar';
+        setStatus('No se pudo acceder a la cámara', 'err');
+        console.error(err);
+      }
+    }
+
+    // ── Scan loop ──
+    function tick() {
+      if (!scanning) return;
+      rafId = requestAnimationFrame(tick);
+
+      if (video.readyState < video.HAVE_ENOUGH_DATA) return;
+
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'dontInvert'
+      });
+
+      if (code) {
+        const now = Date.now();
+        if (code.data === lastQR && (now - lastQRTime) < COOLDOWN_MS) return;
+
+        lastQR     = code.data;
+        lastQRTime = now;
+
+        onQRDetected(code.data);
+      }
+    }
+
+    // ── QR detected ──
+    function onQRDetected(data) {
+      // visual feedback
+      scanFrame.classList.remove('detected');
+      void scanFrame.offsetWidth; // reflow
+      scanFrame.classList.add('detected');
+      setTimeout(() => scanFrame.classList.remove('detected'), 500);
+
+      // vibrate if available
+      if (navigator.vibrate) navigator.vibrate(60);
+
+      const url = sanitizeURL(data);
+      if (!url) {
+        setStatus('QR no contiene una URL válida', 'err');
+        return;
+      }
+
+      setStatus('¡QR detectado! Abriendo PDF…', 'ok');
+      openPDF(url);
+    }
+
+    // ── Sanitize URL ──
+    function sanitizeURL(raw) {
+      try {
+        const u = new URL(raw.trim());
+        if (u.protocol === 'http:' || u.protocol === 'https:') return u.href;
+      } catch (_) {}
+      return null;
+    }
+
+    // ── PDF Overlay ──
+    function openPDF(url) {
+      // reset
+      pdfFallback.classList.remove('visible');
+      pdfFrame.style.display = 'block';
+      pdfLoader.classList.remove('hidden');
+      pdfFrame.src = '';
+      openPdfBtn.href = url;
+
+      pdfOverlay.classList.add('visible');
+      document.body.style.overflow = 'hidden';
+
+      // Try loading in iframe
+      pdfFrame.onload = () => {
+        pdfLoader.classList.add('hidden');
+      };
+      pdfFrame.onerror = () => showFallback(url);
+
+      // Set src — for PDFs from same origin it embeds; cross-origin may need Google viewer
+      pdfFrame.src = url;
+
+      // If after 12s still loading, show fallback
+      const timer = setTimeout(() => {
+        if (!pdfLoader.classList.contains('hidden')) showFallback(url);
+      }, 12000);
+
+      pdfFrame.addEventListener('load', () => clearTimeout(timer), { once: true });
+    }
+
+    function showFallback(url) {
+      pdfLoader.classList.add('hidden');
+      pdfFrame.style.display = 'none';
+      pdfFallback.classList.add('visible');
+      openPdfBtn.href = url;
+    }
+
+    function closePDF() {
+      pdfOverlay.classList.remove('visible');
+      pdfFrame.src = '';
+      document.body.style.overflow = '';
+      setStatus('Listo para escanear', '');
+      lastQRTime = Date.now(); // cooldown so same QR doesn't re-trigger immediately
+    }
+
+    closeBtn.addEventListener('click', closePDF);
+
+    // Close on backdrop click (outside PDF)
+    pdfOverlay.addEventListener('click', e => {
+      if (e.target === pdfOverlay) closePDF();
+    });
+
+    // ── Status helper ──
+    function setStatus(msg, type) {
+      statusMsg.textContent = msg;
+      statusMsg.className = type || '';
+    }
+  </script>
+</body>
+</html>
