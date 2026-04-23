@@ -17,11 +17,10 @@
       --accent: #6c63ff;
       --accent2: #ff6584;
       --bg: #0f0f1a;
-      --surface: #1a1a2e;
     }
 
     html, body {
-      height: 100%;
+      height: 100%; width: 100%;
       overflow: hidden;
       background: var(--bg);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -29,8 +28,8 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* ── SCANNER SCREEN ── */
-    #scanner-screen {
+    /* ─── SCANNER WRAPPER ─── */
+    #scanner-wrap {
       position: relative;
       width: 100vw;
       height: 100vh;
@@ -38,537 +37,364 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      background: #000;
     }
 
-    #video {
+    /* html5-qrcode mounts a video+canvas here */
+    #qr-reader {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      width: 100% !important;
+      height: 100% !important;
     }
 
-    #canvas { display: none; }
+    /* hide the default html5-qrcode UI chrome */
+    #qr-reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+    #qr-reader img,
+    #qr-reader button,
+    #qr-reader select,
+    #qr-reader span,
+    #qr-reader div > br { display: none !important; }
+    #qr-reader > div[style] { display: none !important; }
 
-    /* dark vignette overlay */
+    /* dark vignette */
     .vignette {
       position: absolute;
       inset: 0;
       background: radial-gradient(ellipse at center,
-        transparent 45%,
-        rgba(0,0,0,0.72) 100%);
+        transparent 38%, rgba(0,0,0,0.68) 100%);
       pointer-events: none;
+      z-index: 5;
     }
 
     /* top bar */
     .top-bar {
       position: absolute;
       top: 0; left: 0; right: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 24px 20px;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+      display: flex; align-items: center; justify-content: center;
+      padding: max(44px, env(safe-area-inset-top, 44px)) 24px 18px;
+      background: linear-gradient(to bottom, rgba(0,0,0,.65), transparent);
       z-index: 10;
     }
     .top-bar h1 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      opacity: 0.9;
+      font-size: 1.05rem; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
     }
 
-    /* scanning frame */
+    /* scan frame */
     .scan-frame {
       position: relative;
-      width: min(65vw, 65vh);
-      height: min(65vw, 65vh);
+      width: min(62vw, 62vh);
+      height: min(62vw, 62vh);
       z-index: 10;
     }
-
     .scan-frame::before, .scan-frame::after,
-    .corner-br, .corner-bl {
+    .c-br, .c-bl {
       content: '';
       position: absolute;
-      width: 36px;
-      height: 36px;
-      border-color: #fff;
+      width: 38px; height: 38px;
+      border-color: rgba(255,255,255,.9);
       border-style: solid;
+      transition: border-color .2s;
     }
-    .scan-frame::before  { top: 0;    left: 0;  border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
-    .scan-frame::after   { top: 0;    right: 0; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
-    .corner-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
-    .corner-bl { bottom: 0; left: 0;  border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+    .scan-frame::before { top:0;    left:0;  border-width:3px 0 0 3px; border-radius:6px 0 0 0; }
+    .scan-frame::after  { top:0;    right:0; border-width:3px 3px 0 0; border-radius:0 6px 0 0; }
+    .c-br               { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 6px 0; }
+    .c-bl               { bottom:0; left:0;  border-width:0 0 3px 3px; border-radius:0 0 0 6px; }
 
-    /* animated laser line */
     .laser {
       position: absolute;
-      left: 6px; right: 6px;
-      height: 2px;
+      left:6px; right:6px; height:2px;
       background: linear-gradient(to right, transparent, var(--accent), transparent);
-      box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent);
-      border-radius: 2px;
-      animation: scan 2.4s ease-in-out infinite;
-      top: 6px;
+      box-shadow: 0 0 8px var(--accent), 0 0 18px var(--accent);
+      border-radius:2px;
+      animation: scan 2.2s ease-in-out infinite;
+      top:6px;
     }
     @keyframes scan {
-      0%   { top: 6px;   opacity: 1; }
-      45%  { top: calc(100% - 8px); opacity: 1; }
-      50%  { top: calc(100% - 8px); opacity: 0.3; }
-      95%  { top: 6px;   opacity: 1; }
-      100% { top: 6px;   opacity: 1; }
+      0%,100% { top:6px; opacity:1; }
+      48%     { top:calc(100% - 8px); opacity:1; }
+      50%     { top:calc(100% - 8px); opacity:.3; }
     }
 
     /* flash on detect */
-    .scan-frame.detected {
-      animation: flash 0.35s ease-out;
-    }
-    @keyframes flash {
-      0%   { filter: drop-shadow(0 0 0px transparent); }
-      40%  { filter: drop-shadow(0 0 18px #4ade80); }
-      100% { filter: drop-shadow(0 0 0px transparent); }
-    }
-    .scan-frame.detected::before,
-    .scan-frame.detected::after,
-    .scan-frame.detected .corner-br,
-    .scan-frame.detected .corner-bl {
-      border-color: #4ade80;
-      transition: border-color 0.15s;
+    .scan-frame.ok .c-br,
+    .scan-frame.ok .c-bl,
+    .scan-frame.ok::before,
+    .scan-frame.ok::after { border-color:#4ade80; }
+    .scan-frame.ok { animation: glow .4s ease-out; }
+    @keyframes glow {
+      0%   { filter:drop-shadow(0 0 0 transparent); }
+      40%  { filter:drop-shadow(0 0 20px #4ade80); }
+      100% { filter:drop-shadow(0 0 0 transparent); }
     }
 
-    /* scanning pulse dot */
-    .scan-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: #4ade80;
-      box-shadow: 0 0 8px #4ade80;
-      animation: pulse-dot 1.2s ease-in-out infinite;
-      display: inline-block;
-      margin-right: 8px;
-      flex-shrink: 0;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.4; transform: scale(0.7); }
-    }
-
-    /* bottom hint */
-    .hint {
+    /* bottom bar */
+    .bottom-bar {
       position: absolute;
-      bottom: 0; left: 0; right: 0;
-      padding: 20px 24px 48px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+      bottom:0; left:0; right:0;
+      display:flex; flex-direction:column;
+      align-items:center; gap:10px;
+      padding: 18px 24px max(32px, env(safe-area-inset-bottom, 32px));
+      background: linear-gradient(to top, rgba(0,0,0,.65), transparent);
       z-index: 10;
     }
-    .hint p {
-      font-size: 0.95rem;
-      opacity: 0.7;
-      text-align: center;
+    .bottom-bar p { font-size:.9rem; opacity:.65; text-align:center; }
+
+    #status {
+      font-size:.82rem; font-weight:500;
+      padding:6px 18px; border-radius:20px;
+      background:rgba(255,255,255,.08);
+      backdrop-filter:blur(8px);
+      border:1px solid rgba(255,255,255,.12);
+      display:flex; align-items:center; gap:8px;
+      min-height:32px; transition:all .3s;
+    }
+    #status.ok  { background:rgba(74,222,128,.15); border-color:rgba(74,222,128,.4); color:#4ade80; }
+    #status.err { background:rgba(255,101,132,.15); border-color:rgba(255,101,132,.4); color:var(--accent2); }
+
+    .dot {
+      width:9px; height:9px; border-radius:50%;
+      background:#4ade80; box-shadow:0 0 7px #4ade80;
+      animation:pdot 1.1s ease-in-out infinite; flex-shrink:0;
+    }
+    @keyframes pdot {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%     { opacity:.3; transform:scale(.65); }
     }
 
-    #status-msg {
-      font-size: 0.85rem;
-      font-weight: 500;
-      padding: 6px 18px;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.12);
-      min-height: 34px;
-      display: flex;
-      align-items: center;
-      transition: all 0.3s;
-    }
-    #status-msg.ok  { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.4); color: #4ade80; }
-    #status-msg.err { background: rgba(255,101,132,0.15); border-color: rgba(255,101,132,0.4); color: var(--accent2); }
-
-    /* ── PERMISSION SCREEN ── */
-    #permission-screen {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      z-index: 100;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 28px;
-      padding: 40px;
-      text-align: center;
-    }
-    #permission-screen.visible { display: flex; }
-
-    .perm-icon {
-      font-size: 4.5rem;
-      line-height: 1;
-    }
-    #permission-screen h2 { font-size: 1.5rem; font-weight: 700; }
-    #permission-screen p  { font-size: 1rem; opacity: 0.65; line-height: 1.6; max-width: 360px; }
-
-    .btn-primary {
-      padding: 14px 40px;
-      border-radius: 50px;
-      border: none;
-      background: var(--accent);
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 4px 24px rgba(108,99,255,0.4);
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .btn-primary:active {
-      transform: scale(0.96);
-      box-shadow: 0 2px 12px rgba(108,99,255,0.3);
-    }
-
-    /* ── PDF POPUP OVERLAY ── */
+    /* ─── PDF OVERLAY ─── */
     #pdf-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 200;
-      background: rgba(0,0,0,0.92);
-      backdrop-filter: blur(4px);
-      flex-direction: column;
-      animation: fadeIn 0.25s ease;
+      display:none; position:fixed; inset:0; z-index:200;
+      background:rgba(0,0,0,.94);
+      backdrop-filter:blur(6px);
+      flex-direction:column;
     }
-    #pdf-overlay.visible { display: flex; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.97); }
-      to   { opacity: 1; transform: scale(1); }
+    #pdf-overlay.open { display:flex; animation:fadeUp .25s ease; }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(14px); }
+      to   { opacity:1; transform:translateY(0); }
     }
 
-    /* close button */
     #close-btn {
-      position: absolute;
-      top: max(20px, env(safe-area-inset-top, 20px));
-      right: 20px;
-      z-index: 300;
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(255,255,255,0.12);
-      backdrop-filter: blur(10px);
-      border: 1.5px solid rgba(255,255,255,0.2);
-      color: #fff;
-      font-size: 1.4rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s, transform 0.15s;
+      position:absolute;
+      top: max(18px, env(safe-area-inset-top, 18px));
+      right:18px; z-index:10;
+      width:52px; height:52px; border-radius:50%;
+      border:1.5px solid rgba(255,255,255,.22);
+      background:rgba(255,255,255,.1);
+      backdrop-filter:blur(10px);
+      color:#fff; font-size:1.3rem;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:background .2s, transform .15s;
     }
-    #close-btn:hover  { background: rgba(255,255,255,0.22); }
-    #close-btn:active { transform: scale(0.9); }
+    #close-btn:active { transform:scale(.88); }
 
-    /* pdf container */
-    #pdf-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: max(80px, calc(env(safe-area-inset-top, 0px) + 80px)) 0 max(20px, env(safe-area-inset-bottom, 20px));
+    #pdf-wrap {
+      flex:1; display:flex; flex-direction:column;
+      padding: max(82px, calc(env(safe-area-inset-top,0px)+82px)) 0
+               max(18px, env(safe-area-inset-bottom,18px));
     }
 
     #pdf-frame {
-      flex: 1;
-      width: 100%;
-      border: none;
-      background: #fff;
+      flex:1; width:100%; border:none; background:#fff;
     }
 
-    /* fallback if iframe fails */
-    #pdf-fallback {
-      display: none;
-      flex: 1;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      text-align: center;
-      padding: 40px;
+    /* spinner */
+    #loader {
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      z-index:5; transition:opacity .3s;
     }
-    #pdf-fallback.visible { display: flex; }
-    #pdf-fallback .fallback-icon { font-size: 4rem; }
-    #pdf-fallback h3 { font-size: 1.3rem; font-weight: 600; }
-    #pdf-fallback p  { opacity: 0.6; line-height: 1.6; max-width: 340px; }
-    #open-pdf-btn {
-      padding: 13px 36px;
-      border-radius: 50px;
-      border: none;
-      background: var(--accent);
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
+    #loader.hide { opacity:0; pointer-events:none; }
+    .spin {
+      width:48px; height:48px;
+      border:4px solid rgba(255,255,255,.12);
+      border-top-color:var(--accent);
+      border-radius:50%;
+      animation:sp .75s linear infinite;
     }
+    @keyframes sp { to { transform:rotate(360deg); } }
 
-    /* loading spinner in overlay */
-    #pdf-loader {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.5);
-      z-index: 5;
-      transition: opacity 0.3s;
+    /* fallback */
+    #fallback {
+      display:none; flex:1;
+      flex-direction:column; align-items:center; justify-content:center;
+      gap:18px; padding:40px; text-align:center;
     }
-    #pdf-loader.hidden { opacity: 0; pointer-events: none; }
-
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(255,255,255,0.15);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    #fallback.show { display:flex; }
+    #fallback h3 { font-size:1.3rem; font-weight:600; }
+    #fallback p  { opacity:.6; line-height:1.6; max-width:340px; }
+    #open-btn {
+      padding:13px 36px; border-radius:50px; border:none;
+      background:var(--accent); color:#fff;
+      font-size:1rem; font-weight:600;
+      cursor:pointer; text-decoration:none;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-  <!-- ── PERMISSION SCREEN ── -->
-  <div id="permission-screen" class="visible">
-    <div class="perm-icon">📷</div>
-    <h2>Acceso a la cámara</h2>
-    <p>Para escanear los códigos QR necesitamos acceder a la cámara de tu dispositivo.</p>
-    <button class="btn-primary" id="request-cam-btn">Activar cámara</button>
+<!-- ─── SCANNER ─── -->
+<div id="scanner-wrap">
+  <div id="qr-reader"></div>
+  <div class="vignette"></div>
+
+  <div class="top-bar"><h1>Escáner QR</h1></div>
+
+  <div class="scan-frame" id="sf">
+    <div class="c-br"></div>
+    <div class="c-bl"></div>
+    <div class="laser"></div>
   </div>
 
-  <!-- ── SCANNER SCREEN ── -->
-  <div id="scanner-screen">
-    <video id="video" autoplay muted playsinline></video>
-    <canvas id="canvas"></canvas>
+  <div class="bottom-bar">
+    <p>Apunta la cámara a uno de los 8 códigos QR</p>
+    <div id="status"><span class="dot"></span>Iniciando cámara…</div>
+  </div>
+</div>
 
-    <div class="vignette"></div>
-
-    <div class="top-bar">
-      <h1>Escaner QR</h1>
-    </div>
-
-    <div class="scan-frame" id="scan-frame">
-      <div class="corner-br"></div>
-      <div class="corner-bl"></div>
-      <div class="laser"></div>
-    </div>
-
-    <div class="hint">
-      <p>Apunta la cámara hacia uno de los 8 códigos QR</p>
-      <div id="status-msg"><span class="scan-dot"></span>Buscando código QR…</div>
+<!-- ─── PDF OVERLAY ─── -->
+<div id="pdf-overlay">
+  <button id="close-btn" aria-label="Cerrar">✕</button>
+  <div id="loader"><div class="spin"></div></div>
+  <div id="pdf-wrap">
+    <iframe id="pdf-frame" title="PDF"></iframe>
+    <div id="fallback">
+      <div style="font-size:3.5rem">📄</div>
+      <h3>No se puede embeber</h3>
+      <p>Este PDF no permite mostrarse en la app. Ábrelo directamente.</p>
+      <a id="open-btn" target="_blank" rel="noopener">Abrir PDF</a>
     </div>
   </div>
+</div>
 
-  <!-- ── PDF POPUP OVERLAY ── -->
-  <div id="pdf-overlay">
-    <button id="close-btn" aria-label="Cerrar">✕</button>
+<!-- html5-qrcode: battle-tested scanner library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-    <div id="pdf-loader">
-      <div class="spinner"></div>
-    </div>
+<script>
+  const sf        = document.getElementById('sf');
+  const statusEl  = document.getElementById('status');
+  const overlay   = document.getElementById('pdf-overlay');
+  const frame     = document.getElementById('pdf-frame');
+  const loader    = document.getElementById('loader');
+  const fallback  = document.getElementById('fallback');
+  const openBtn   = document.getElementById('open-btn');
+  const closeBtn  = document.getElementById('close-btn');
 
-    <div id="pdf-container">
-      <iframe id="pdf-frame" title="Documento PDF"></iframe>
-      <div id="pdf-fallback">
-        <div class="fallback-icon">📄</div>
-        <h3>PDF no embebible</h3>
-        <p>Tu navegador no puede mostrar este PDF directamente. Ábrelo con el botón de abajo.</p>
-        <a id="open-pdf-btn" target="_blank" rel="noopener">Abrir PDF</a>
-      </div>
-    </div>
-  </div>
+  // ── PWA ──
+  if ('serviceWorker' in navigator)
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
 
-  <!-- jsQR library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+  // ── Cooldown ──
+  let lastUrl = '';
+  let lastTime = 0;
+  const COOLDOWN = 3500;
 
-  <script>
-    // ── Elements ──
-    const permScreen   = document.getElementById('permission-screen');
-    const requestBtn   = document.getElementById('request-cam-btn');
-    const video        = document.getElementById('video');
-    const canvas       = document.getElementById('canvas');
-    const ctx          = canvas.getContext('2d', { willReadFrequently: true });
-    const scanFrame    = document.getElementById('scan-frame');
-    const statusMsg    = document.getElementById('status-msg');
-    const pdfOverlay   = document.getElementById('pdf-overlay');
-    const pdfFrame     = document.getElementById('pdf-frame');
-    const pdfFallback  = document.getElementById('pdf-fallback');
-    const pdfLoader    = document.getElementById('pdf-loader');
-    const openPdfBtn   = document.getElementById('open-pdf-btn');
-    const closeBtn     = document.getElementById('close-btn');
+  // ── html5-qrcode scanner ──
+  const scanner = new Html5Qrcode('qr-reader');
 
-    // ── State ──
-    let scanning       = false;
-    let lastQR         = '';
-    let lastQRTime     = 0;
-    const COOLDOWN_MS  = 3000;  // ms before same QR re-triggers
-    let rafId          = null;
+  const config = {
+    fps: 15,
+    qrbox: { width: 280, height: 280 },   // detection zone (hidden visually, we draw our own)
+    aspectRatio: window.innerHeight / window.innerWidth,
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+    rememberLastUsedCamera: true,
+    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+  };
 
-    // ── PWA Service Worker ──
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () =>
-        navigator.serviceWorker.register('./sw.js').catch(console.warn)
-      );
+  scanner.start(
+    { facingMode: 'environment' },
+    config,
+    onScanSuccess,
+    () => {}   // ignore per-frame errors silently
+  ).then(() => {
+    setStatus('<span class="dot"></span>Buscando código QR…', '');
+  }).catch(err => {
+    console.error(err);
+    setStatus('⚠️ Sin acceso a la cámara', 'err');
+  });
+
+  function onScanSuccess(url) {
+    const now = Date.now();
+    if (url === lastUrl && now - lastTime < COOLDOWN) return;
+    lastUrl  = url;
+    lastTime = now;
+
+    // Validate URL
+    let clean;
+    try {
+      const u = new URL(url.trim());
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error();
+      clean = u.href;
+    } catch {
+      setStatus('QR sin URL válida', 'err');
+      setTimeout(() => setStatus('<span class="dot"></span>Buscando…', ''), 2000);
+      return;
     }
 
-    // ── Camera ──
-    requestBtn.addEventListener('click', startCamera);
+    // Visual feedback
+    sf.classList.add('ok');
+    setTimeout(() => sf.classList.remove('ok'), 500);
+    if (navigator.vibrate) navigator.vibrate(70);
 
-    async function startCamera() {
-      requestBtn.disabled = true;
-      requestBtn.textContent = 'Iniciando…';
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width:  { ideal: 1920 },
-            height: { ideal: 1080 }
-          },
-          audio: false
-        });
-        video.srcObject = stream;
-        video.addEventListener('loadedmetadata', () => {
-          permScreen.classList.remove('visible');
-          scanning = true;
-          setStatus('Buscando código QR…', '');
-          requestAnimationFrame(tick);
-        });
-      } catch (err) {
-        requestBtn.disabled = false;
-        requestBtn.textContent = 'Reintentar';
-        setStatus('No se pudo acceder a la cámara', 'err');
-        console.error(err);
-      }
-    }
+    setStatus('✓ QR detectado', 'ok');
+    openPDF(clean);
+  }
 
-    // ── Scan loop ──
-    function tick() {
-      if (!scanning) return;
-      rafId = requestAnimationFrame(tick);
+  // ── PDF Overlay ──
+  function openPDF(url) {
+    fallback.classList.remove('show');
+    frame.style.display = 'block';
+    loader.classList.remove('hide');
+    frame.src = '';
+    openBtn.href = url;
 
-      if (video.readyState < video.HAVE_ENOUGH_DATA) return;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
 
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Wrap cross-origin PDFs in Google Docs viewer
+    const embedUrl = url.startsWith(location.origin)
+      ? url
+      : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
 
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: 'attemptBoth'
-      });
+    frame.onload  = () => loader.classList.add('hide');
+    frame.onerror = () => showFallback(url);
+    frame.src = embedUrl;
 
-      if (code) {
-        const now = Date.now();
-        if (code.data === lastQR && (now - lastQRTime) < COOLDOWN_MS) return;
+    const t = setTimeout(() => {
+      if (!loader.classList.contains('hide')) showFallback(url);
+    }, 15000);
+    frame.addEventListener('load', () => clearTimeout(t), { once: true });
+  }
 
-        lastQR     = code.data;
-        lastQRTime = now;
+  function showFallback(url) {
+    loader.classList.add('hide');
+    frame.style.display = 'none';
+    fallback.classList.add('show');
+    openBtn.href = url;
+  }
 
-        onQRDetected(code.data);
-      }
-    }
+  function closePDF() {
+    overlay.classList.remove('open');
+    frame.src = '';
+    document.body.style.overflow = '';
+    lastTime = Date.now();
+    setStatus('<span class="dot"></span>Listo para escanear', '');
+  }
 
-    // ── QR detected ──
-    function onQRDetected(data) {
-      // visual feedback
-      scanFrame.classList.remove('detected');
-      void scanFrame.offsetWidth; // reflow
-      scanFrame.classList.add('detected');
-      setTimeout(() => scanFrame.classList.remove('detected'), 500);
+  closeBtn.addEventListener('click', closePDF);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closePDF(); });
 
-      // vibrate if available
-      if (navigator.vibrate) navigator.vibrate(60);
-
-      const url = sanitizeURL(data);
-      if (!url) {
-        setStatus('QR no contiene una URL válida', 'err');
-        return;
-      }
-
-      setStatus('¡QR detectado! Abriendo PDF…', 'ok');
-      openPDF(url);
-    }
-
-    // ── Sanitize URL ──
-    function sanitizeURL(raw) {
-      try {
-        const u = new URL(raw.trim());
-        if (u.protocol === 'http:' || u.protocol === 'https:') return u.href;
-      } catch (_) {}
-      return null;
-    }
-
-    // ── PDF Overlay ──
-    function openPDF(url) {
-      // reset
-      pdfFallback.classList.remove('visible');
-      pdfFrame.style.display = 'block';
-      pdfLoader.classList.remove('hidden');
-      pdfFrame.src = '';
-      openPdfBtn.href = url;
-
-      pdfOverlay.classList.add('visible');
-      document.body.style.overflow = 'hidden';
-
-      // Use Google Docs viewer to bypass X-Frame-Options on cross-origin PDFs
-      const isSameOrigin = url.startsWith(window.location.origin);
-      const embedUrl = isSameOrigin
-        ? url
-        : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-
-      pdfFrame.onload = () => {
-        pdfLoader.classList.add('hidden');
-      };
-      pdfFrame.onerror = () => showFallback(url);
-
-      pdfFrame.src = embedUrl;
-
-      // If after 15s still loading, show fallback
-      const timer = setTimeout(() => {
-        if (!pdfLoader.classList.contains('hidden')) showFallback(url);
-      }, 15000);
-
-      pdfFrame.addEventListener('load', () => clearTimeout(timer), { once: true });
-    }
-
-    function showFallback(url) {
-      pdfLoader.classList.add('hidden');
-      pdfFrame.style.display = 'none';
-      pdfFallback.classList.add('visible');
-      openPdfBtn.href = url;
-    }
-
-    function closePDF() {
-      pdfOverlay.classList.remove('visible');
-      pdfFrame.src = '';
-      document.body.style.overflow = '';
-      setStatus('Listo para escanear', '');
-      lastQRTime = Date.now(); // cooldown so same QR doesn't re-trigger immediately
-    }
-
-    closeBtn.addEventListener('click', closePDF);
-
-    // Close on backdrop click (outside PDF)
-    pdfOverlay.addEventListener('click', e => {
-      if (e.target === pdfOverlay) closePDF();
-    });
-
-    // ── Status helper ──
-    function setStatus(msg, type) {
-      const dot = type === '' ? '<span class="scan-dot"></span>' : '';
-      statusMsg.innerHTML = dot + msg;
-      statusMsg.className = type || '';
-    }
-  </script>
+  // ── Status ──
+  function setStatus(html, cls) {
+    statusEl.innerHTML = html;
+    statusEl.className = cls;
+  }
+</script>
 </body>
 </html>
