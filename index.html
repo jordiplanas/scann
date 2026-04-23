@@ -137,6 +137,22 @@
       transition: border-color 0.15s;
     }
 
+    /* scanning pulse dot */
+    .scan-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 8px #4ade80;
+      animation: pulse-dot 1.2s ease-in-out infinite;
+      display: inline-block;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
     /* bottom hint */
     .hint {
       position: absolute;
@@ -349,7 +365,7 @@
 
     <div class="hint">
       <p>Apunta la cámara hacia uno de los 8 códigos QR</p>
-      <div id="status-msg">Buscando código QR…</div>
+      <div id="status-msg"><span class="scan-dot"></span>Buscando código QR…</div>
     </div>
   </div>
 
@@ -448,7 +464,7 @@
 
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: 'dontInvert'
+        inversionAttempts: 'attemptBoth'
       });
 
       if (code) {
@@ -504,19 +520,23 @@
       pdfOverlay.classList.add('visible');
       document.body.style.overflow = 'hidden';
 
-      // Try loading in iframe
+      // Use Google Docs viewer to bypass X-Frame-Options on cross-origin PDFs
+      const isSameOrigin = url.startsWith(window.location.origin);
+      const embedUrl = isSameOrigin
+        ? url
+        : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+
       pdfFrame.onload = () => {
         pdfLoader.classList.add('hidden');
       };
       pdfFrame.onerror = () => showFallback(url);
 
-      // Set src — for PDFs from same origin it embeds; cross-origin may need Google viewer
-      pdfFrame.src = url;
+      pdfFrame.src = embedUrl;
 
-      // If after 12s still loading, show fallback
+      // If after 15s still loading, show fallback
       const timer = setTimeout(() => {
         if (!pdfLoader.classList.contains('hidden')) showFallback(url);
-      }, 12000);
+      }, 15000);
 
       pdfFrame.addEventListener('load', () => clearTimeout(timer), { once: true });
     }
@@ -545,7 +565,8 @@
 
     // ── Status helper ──
     function setStatus(msg, type) {
-      statusMsg.textContent = msg;
+      const dot = type === '' ? '<span class="scan-dot"></span>' : '';
+      statusMsg.innerHTML = dot + msg;
       statusMsg.className = type || '';
     }
   </script>
