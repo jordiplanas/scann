@@ -65,14 +65,10 @@
       background: linear-gradient(to bottom, rgba(0,0,0,.9) 55%, transparent);
       pointer-events: auto;
     }
-    .lbl-cupra {
-      font-size: .75rem; letter-spacing: .56em; text-transform: uppercase;
-      padding-left: .56em; opacity: .85;
-    }
-    .emblem { width: 46px; height: auto; margin: 3px 0; }
-    .lbl-raval {
-      font-size: 1.28rem; letter-spacing: .2em; text-transform: uppercase;
-      padding-left: .2em;
+    .logo-main {
+      width: min(52vw, 160px);
+      height: auto;
+      display: block;
     }
 
     /* Scan frame */
@@ -155,9 +151,8 @@
       background: #000; border-bottom: 1px solid rgba(255,255,255,.1);
       flex-shrink: 0; min-height: 58px;
     }
-    .hd-brand { display: flex; align-items: center; gap: 10px; }
-    .hd-emblem { width: 22px; height: auto; opacity: .8; }
-    .hd-text { font-size: .68rem; letter-spacing: .28em; text-transform: uppercase; opacity: .65; }
+    .hd-brand { display: flex; align-items: center; }
+    .hd-logo { height: 28px; width: auto; opacity: .85; }
 
     #close-btn {
       width: 44px; height: 44px;
@@ -220,12 +215,7 @@
 <!-- UI overlay -->
 <div id="ui">
   <div class="top-bar">
-    <span class="lbl-cupra">Cupra</span>
-    <svg class="emblem" viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M100 8 L128 38 L160 18 L148 52 L192 58 L162 82 L175 108 L140 96 L100 212 L60 96 L25 108 L38 82 L8 58 L52 52 L40 18 L72 38 Z" fill="white"/>
-      <path d="M100 42 L116 60 L136 48 L128 70 L154 74 L134 90 L143 108 L120 100 L100 178 L80 100 L57 108 L66 90 L46 74 L72 70 L64 48 L84 60 Z" fill="black"/>
-    </svg>
-    <span class="lbl-raval">Raval</span>
+    <img class="logo-main" src="./logo-cropped.png" alt="Cupra Raval"/>
   </div>
 
   <div id="sf">
@@ -244,11 +234,7 @@
 <div id="pdf-overlay">
   <div class="pdf-header">
     <div class="hd-brand">
-      <svg class="hd-emblem" viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M100 8 L128 38 L160 18 L148 52 L192 58 L162 82 L175 108 L140 96 L100 212 L60 96 L25 108 L38 82 L8 58 L52 52 L40 18 L72 38 Z" fill="white"/>
-        <path d="M100 42 L116 60 L136 48 L128 70 L154 74 L134 90 L143 108 L120 100 L100 178 L80 100 L57 108 L66 90 L46 74 L72 70 L64 48 L84 60 Z" fill="black"/>
-      </svg>
-      <span class="hd-text">Cupra Raval</span>
+      <img class="hd-logo" src="./logo-cropped.png" alt="Cupra Raval"/>
     </div>
     <button id="close-btn">&#x2715;</button>
   </div>
