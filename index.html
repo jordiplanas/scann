@@ -1,227 +1,215 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <meta name="theme-color" content="#0f0f1a"/>
+  <meta name="theme-color" content="#000000"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="QR PDF"/>
+  <meta name="apple-mobile-web-app-title" content="CUPRA RAVAL"/>
   <link rel="manifest" href="manifest.json"/>
-  <title>QR Scanner PDF</title>
+  <title>CUPRA RAVAL</title>
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--accent:#6c63ff;--green:#4ade80;--red:#ff6584;--bg:#0f0f1a}
+    @font-face {
+      font-family: 'Cupra';
+      src: url('./Cupra-Regular.ttf') format('truetype');
+      font-weight: normal; font-style: normal;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html,body{
-      width:100%;height:100%;overflow:hidden;
-      background:#000;
-      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-      color:#fff;-webkit-tap-highlight-color:transparent;
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #000;
+      font-family: 'Cupra', sans-serif;
+      color: #fff; -webkit-tap-highlight-color: transparent;
     }
 
-    /* ══════════════════════════════
-       CAMERA LAYER (html5-qrcode)
-    ══════════════════════════════ */
-    #qr-reader{
-      position:fixed;inset:0;
-      width:100%!important;height:100%!important;
-      overflow:hidden;border:none!important;
+    /* ═══ CAMERA ═══ */
+    #qr-reader {
+      position: fixed; inset: 0;
+      width: 100% !important; height: 100% !important;
+      overflow: hidden; border: none !important;
     }
-    /* Force video to cover full screen */
-    #qr-reader video{
-      position:absolute!important;inset:0!important;
-      width:100%!important;height:100%!important;
-      object-fit:cover!important;
+    #qr-reader video {
+      position: absolute !important; inset: 0 !important;
+      width: 100% !important; height: 100% !important;
+      object-fit: cover !important;
     }
-    /* Hide ALL html5-qrcode native UI */
-    #qr-reader img,
-    #qr-reader button,
-    #qr-reader select,
-    #qr-reader br,
-    #qr-reader p,
-    #qr-reader span:not(.dot),
+    #qr-reader img, #qr-reader button, #qr-reader select,
+    #qr-reader br, #qr-reader p, #qr-reader span:not(.dot),
     #qr-reader #qr-reader__status_span,
     #qr-reader #qr-reader__header_message,
     #qr-reader #qr-reader__dashboard,
     #qr-reader #qr-reader__filescan_input,
-    #qr-reader #qr-reader__camera_selection,
-    #qr-reader #qr-reader__scan_region img{
-      display:none!important;
-    }
-    /* Keep the scan canvas visible but invisible (needed for detection) */
-    #qr-reader canvas{opacity:0;position:absolute;pointer-events:none;}
-    /* Hide the scan box drawn by the library */
-    #qr-reader__scan_region>div{display:none!important;}
+    #qr-reader #qr-reader__camera_selection { display: none !important; }
+    #qr-reader canvas { opacity: 0; position: absolute; pointer-events: none; }
+    #qr-reader__scan_region > div { display: none !important; }
 
-    /* ══════════════════════════════
-       UI OVERLAY (always on top)
-    ══════════════════════════════ */
-    #ui{
-      position:fixed;inset:0;
-      pointer-events:none;
-      z-index:20;
-      display:flex;flex-direction:column;
-      align-items:center;justify-content:center;
+    /* ═══ UI LAYER ═══ */
+    #ui {
+      position: fixed; inset: 0; pointer-events: none; z-index: 20;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
     }
-
-    /* Vignette */
-    #ui::before{
-      content:'';position:absolute;inset:0;
-      background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,.7) 100%);
+    #ui::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, transparent 28%, rgba(0,0,0,.78) 100%);
     }
 
     /* Top bar */
-    .top-bar{
-      position:absolute;top:0;left:0;right:0;
-      display:flex;align-items:center;justify-content:center;
-      padding:max(44px,env(safe-area-inset-top,44px)) 24px 16px;
-      background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent);
-      pointer-events:auto;
+    .top-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding-top: max(34px, env(safe-area-inset-top, 34px));
+      padding-bottom: 20px;
+      background: linear-gradient(to bottom, rgba(0,0,0,.9) 55%, transparent);
+      pointer-events: auto;
     }
-    .top-bar h1{font-size:1rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+    .lbl-cupra {
+      font-size: .75rem; letter-spacing: .56em; text-transform: uppercase;
+      padding-left: .56em; opacity: .85;
+    }
+    .emblem { width: 46px; height: auto; margin: 3px 0; }
+    .lbl-raval {
+      font-size: 1.28rem; letter-spacing: .2em; text-transform: uppercase;
+      padding-left: .2em;
+    }
 
     /* Scan frame */
-    #sf{
-      position:relative;
-      width:min(58vw,58vh);height:min(58vw,58vh);
-      z-index:1;
+    #sf {
+      position: relative; z-index: 1;
+      width: min(54vw, 54vh); height: min(54vw, 54vh);
     }
-    #sf::before,#sf::after,.cb,.cc{
-      content:'';position:absolute;
-      width:36px;height:36px;
-      border-style:solid;border-color:rgba(255,255,255,.92);
-      transition:border-color .2s;
+    #sf::before, #sf::after, .cb, .cc {
+      content: ''; position: absolute;
+      width: 32px; height: 32px;
+      border-style: solid; border-color: rgba(255,255,255,.8);
+      transition: border-color .18s;
     }
-    #sf::before{top:0;left:0; border-width:3px 0 0 3px;border-radius:6px 0 0 0}
-    #sf::after {top:0;right:0;border-width:3px 3px 0 0;border-radius:0 6px 0 0}
-    .cb{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 6px 0}
-    .cc{bottom:0;left:0; border-width:0 0 3px 3px;border-radius:0 0 0 6px}
+    #sf::before { top: 0; left: 0;  border-width: 2px 0 0 2px; }
+    #sf::after  { top: 0; right: 0; border-width: 2px 2px 0 0; }
+    .cb { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+    .cc { bottom: 0; left: 0;  border-width: 0 0 2px 2px; }
 
-    .laser{
-      position:absolute;left:6px;right:6px;height:2px;
-      background:linear-gradient(to right,transparent,var(--accent),transparent);
-      box-shadow:0 0 8px var(--accent),0 0 16px var(--accent);
-      border-radius:2px;
-      animation:scan 2.2s ease-in-out infinite;
+    .laser {
+      position: absolute; left: 5px; right: 5px; height: 1px;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,.9), transparent);
+      box-shadow: 0 0 5px rgba(255,255,255,.7), 0 0 12px rgba(255,255,255,.3);
+      animation: scan 2.2s ease-in-out infinite;
     }
-    @keyframes scan{
-      0%,100%{top:6px;opacity:1}
-      48%{top:calc(100% - 8px);opacity:1}
-      50%{top:calc(100% - 8px);opacity:.3}
+    @keyframes scan {
+      0%, 100% { top: 5px; opacity: 1; }
+      48%       { top: calc(100% - 6px); opacity: 1; }
+      50%       { top: calc(100% - 6px); opacity: .15; }
     }
-    #sf.ok::before,#sf.ok::after,#sf.ok .cb,#sf.ok .cc{border-color:var(--green)}
-    #sf.ok{animation:glow .4s ease-out}
-    @keyframes glow{
-      40%{filter:drop-shadow(0 0 18px var(--green))}
-      100%{filter:none}
+    #sf.ok::before, #sf.ok::after, #sf.ok .cb, #sf.ok .cc { border-color: #fff; }
+    #sf.ok { animation: glow .4s ease-out; }
+    @keyframes glow {
+      40%  { filter: drop-shadow(0 0 14px rgba(255,255,255,.85)); }
+      100% { filter: none; }
     }
 
     /* Bottom bar */
-    .bottom-bar{
-      position:absolute;bottom:0;left:0;right:0;
-      display:flex;flex-direction:column;align-items:center;gap:10px;
-      padding:20px 24px max(32px,env(safe-area-inset-bottom,32px));
-      background:linear-gradient(to top,rgba(0,0,0,.7),transparent);
-      pointer-events:auto;
+    .bottom-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 22px 24px max(30px, env(safe-area-inset-bottom, 30px));
+      background: linear-gradient(to top, rgba(0,0,0,.9) 55%, transparent);
+      pointer-events: auto;
     }
-    .bottom-bar p{font-size:.88rem;opacity:.6;text-align:center}
-
-    #status{
-      font-size:.82rem;font-weight:500;
-      padding:7px 20px;border-radius:20px;
-      background:rgba(255,255,255,.08);
-      backdrop-filter:blur(10px);
-      border:1px solid rgba(255,255,255,.13);
-      display:flex;align-items:center;gap:8px;
-      transition:all .3s;
+    .bottom-bar p {
+      font-size: .66rem; letter-spacing: .14em; text-transform: uppercase;
+      opacity: .42; text-align: center;
     }
-    #status.ok {background:rgba(74,222,128,.15);border-color:rgba(74,222,128,.4);color:var(--green)}
-    #status.err{background:rgba(255,101,132,.15);border-color:rgba(255,101,132,.4);color:var(--red)}
-
-    .dot{
-      width:9px;height:9px;border-radius:50%;flex-shrink:0;
-      background:var(--green);box-shadow:0 0 6px var(--green);
-      animation:pulse 1.1s ease-in-out infinite;
+    #status {
+      font-size: .66rem; letter-spacing: .12em; text-transform: uppercase;
+      padding: 7px 24px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.16);
+      display: flex; align-items: center; gap: 9px;
+      transition: all .3s;
     }
-    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
-
-    /* ══════════════════════════════
-       PDF OVERLAY
-    ══════════════════════════════ */
-    #pdf-overlay{
-      display:none;position:fixed;inset:0;z-index:100;
-      background:rgba(10,10,20,.96);
-      flex-direction:column;
+    #status.ok  { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.55); }
+    #status.err { background: rgba(220,60,60,.1); border-color: rgba(220,60,60,.5); color: #f87171; }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+      background: #fff; box-shadow: 0 0 5px #fff;
+      animation: blink 1.2s ease-in-out infinite;
     }
-    #pdf-overlay.open{display:flex;animation:fadeUp .25s ease}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-
-    /* Close button */
-    #close-btn{
-      position:absolute;
-      top:max(16px,env(safe-area-inset-top,16px));
-      right:16px;z-index:10;
-      width:50px;height:50px;border-radius:50%;
-      border:1.5px solid rgba(255,255,255,.2);
-      background:rgba(255,255,255,.1);
-      backdrop-filter:blur(10px);
-      color:#ff0000;font-size:1.25rem;
-      cursor:pointer;display:flex;align-items:center;justify-content:center;
-      transition:background .2s,transform .15s;
-      pointer-events:auto;
-    }
-    #close-btn:active{transform:scale(.88)}
-
-    /* PDF canvas scroll area */
-    #pdf-scroll{
-      flex:1;overflow-y:auto;overflow-x:hidden;
-      padding:max(72px,calc(env(safe-area-inset-top,0px)+72px)) 0
-              max(16px,env(safe-area-inset-bottom,16px));
-      display:flex;flex-direction:column;align-items:center;gap:8px;
-      background:#525659;
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .2; transform: scale(.5); }
     }
 
-    .pdf-page-canvas{
-      display:block;
-      max-width:100%;
-      box-shadow:0 2px 12px rgba(0,0,0,.5);
+    /* ═══ PDF OVERLAY ═══ */
+    #pdf-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      background: #000; flex-direction: column;
     }
+    #pdf-overlay.open { display: flex; animation: fi .2s ease; }
+    @keyframes fi { from { opacity: 0; } to { opacity: 1; } }
 
-    /* Loader */
-    #loader{
-      position:absolute;inset:0;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      gap:16px;z-index:5;transition:opacity .3s;
+    .pdf-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: max(14px, env(safe-area-inset-top, 14px)) 18px 14px;
+      background: #000; border-bottom: 1px solid rgba(255,255,255,.1);
+      flex-shrink: 0; min-height: 58px;
     }
-    #loader.hide{opacity:0;pointer-events:none}
-    .spin{
-      width:48px;height:48px;border-radius:50%;
-      border:4px solid rgba(255,255,255,.12);
-      border-top-color:var(--accent);
-      animation:sp .75s linear infinite;
-    }
-    @keyframes sp{to{transform:rotate(360deg)}}
-    #loader p{font-size:.9rem;opacity:.6}
+    .hd-brand { display: flex; align-items: center; gap: 10px; }
+    .hd-emblem { width: 22px; height: auto; opacity: .8; }
+    .hd-text { font-size: .68rem; letter-spacing: .28em; text-transform: uppercase; opacity: .65; }
 
-    /* Fallback */
-    #fallback{
-      display:none;position:absolute;inset:0;
-      flex-direction:column;align-items:center;justify-content:center;
-      gap:20px;padding:40px;text-align:center;
+    #close-btn {
+      width: 44px; height: 44px;
+      border: 1px solid rgba(255,255,255,.2);
+      background: transparent; color: #fff; font-size: .95rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .15s, border-color .15s;
     }
-    #fallback.show{display:flex}
-    #fallback .ico{font-size:4rem;line-height:1}
-    #fallback h3{font-size:1.3rem;font-weight:700}
-    #fallback p{opacity:.6;line-height:1.6;max-width:340px;font-size:.95rem}
-    #open-btn{
-      padding:14px 40px;border-radius:50px;border:none;
-      background:var(--accent);color:#fff;
-      font-size:1rem;font-weight:600;
-      cursor:pointer;text-decoration:none;display:inline-block;
-      box-shadow:0 4px 20px rgba(108,99,255,.4);
+    #close-btn:active { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.5); }
+
+    #pdf-scroll {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      background: #111;
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
     }
-    #open-btn:active{transform:scale(.96)}
+    .pdf-page-canvas { display: block; max-width: 100%; }
+
+    #loader {
+      position: absolute; top: 58px; bottom: 0; left: 0; right: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 18px; background: #000; z-index: 5; transition: opacity .3s;
+    }
+    #loader.hide { opacity: 0; pointer-events: none; }
+    .spin {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.08);
+      border-top-color: rgba(255,255,255,.7);
+      animation: sp .7s linear infinite;
+    }
+    @keyframes sp { to { transform: rotate(360deg); } }
+    #loader p { font-size: .63rem; letter-spacing: .16em; text-transform: uppercase; opacity: .38; }
+
+    #fallback {
+      display: none; position: absolute;
+      top: 58px; bottom: 0; left: 0; right: 0;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 22px; padding: 40px; text-align: center; background: #000;
+    }
+    #fallback.show { display: flex; }
+    #fallback h3 { font-size: .82rem; letter-spacing: .22em; text-transform: uppercase; }
+    #fallback p { font-size: .66rem; letter-spacing: .08em; opacity: .4; line-height: 1.9; max-width: 300px; }
+    #open-btn {
+      padding: 13px 44px;
+      border: 1px solid rgba(255,255,255,.35);
+      background: transparent; color: #fff;
+      font-family: 'Cupra', sans-serif;
+      font-size: .68rem; letter-spacing: .22em; text-transform: uppercase;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      transition: background .15s, border-color .15s;
+    }
+    #open-btn:active { background: rgba(255,255,255,.08); border-color: #fff; }
   </style>
 </head>
 <body>
@@ -231,161 +219,166 @@
 
 <!-- UI overlay -->
 <div id="ui">
-  <div class="top-bar"><h1>Escáner QR</h1></div>
+  <div class="top-bar">
+    <span class="lbl-cupra">Cupra</span>
+    <svg class="emblem" viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M100 8 L128 38 L160 18 L148 52 L192 58 L162 82 L175 108 L140 96 L100 212 L60 96 L25 108 L38 82 L8 58 L52 52 L40 18 L72 38 Z" fill="white"/>
+      <path d="M100 42 L116 60 L136 48 L128 70 L154 74 L134 90 L143 108 L120 100 L100 178 L80 100 L57 108 L66 90 L46 74 L72 70 L64 48 L84 60 Z" fill="black"/>
+    </svg>
+    <span class="lbl-raval">Raval</span>
+  </div>
+
   <div id="sf">
     <div class="cb"></div>
     <div class="cc"></div>
     <div class="laser"></div>
   </div>
+
   <div class="bottom-bar">
-    <p>Apunta la cámara a uno de los 8 códigos QR</p>
-    <div id="status"><span class="dot"></span>Iniciando…</div>
+    <p>Point camera at one of the 8 QR codes</p>
+    <div id="status"><span class="dot"></span>Scanning…</div>
   </div>
 </div>
 
 <!-- PDF overlay -->
 <div id="pdf-overlay">
-  <button id="close-btn">✕</button>
-  <div id="loader"><div class="spin"></div><p>Cargando PDF…</p></div>
-  <div id="pdf-scroll" id="pdf-scroll"></div>
+  <div class="pdf-header">
+    <div class="hd-brand">
+      <svg class="hd-emblem" viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100 8 L128 38 L160 18 L148 52 L192 58 L162 82 L175 108 L140 96 L100 212 L60 96 L25 108 L38 82 L8 58 L52 52 L40 18 L72 38 Z" fill="white"/>
+        <path d="M100 42 L116 60 L136 48 L128 70 L154 74 L134 90 L143 108 L120 100 L100 178 L80 100 L57 108 L66 90 L46 74 L72 70 L64 48 L84 60 Z" fill="black"/>
+      </svg>
+      <span class="hd-text">Cupra Raval</span>
+    </div>
+    <button id="close-btn">&#x2715;</button>
+  </div>
+  <div id="loader"><div class="spin"></div><p>Loading document…</p></div>
+  <div id="pdf-scroll"></div>
   <div id="fallback">
-    <div class="ico">📄</div>
-    <h3>No se puede cargar el PDF</h3>
-    <p>El servidor bloquea el acceso directo. Ábrelo en el navegador.</p>
-    <a id="open-btn" target="_blank" rel="noopener noreferrer">Abrir PDF</a>
+    <h3>Document Unavailable</h3>
+    <p>This file cannot be loaded directly.<br/>Open it in your browser instead.</p>
+    <a id="open-btn" target="_blank" rel="noopener noreferrer">Open Document</a>
   </div>
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-  // ── Config PDF.js worker ──
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-  const sf        = document.getElementById('sf');
-  const statusEl  = document.getElementById('status');
-  const overlay   = document.getElementById('pdf-overlay');
-  const pdfScroll = document.getElementById('pdf-scroll');
-  const loader    = document.getElementById('loader');
-  const fallback  = document.getElementById('fallback');
-  const openBtn   = document.getElementById('open-btn');
-  const closeBtn  = document.getElementById('close-btn');
+  var sf        = document.getElementById('sf');
+  var statusEl  = document.getElementById('status');
+  var overlay   = document.getElementById('pdf-overlay');
+  var pdfScroll = document.getElementById('pdf-scroll');
+  var loader    = document.getElementById('loader');
+  var fallback  = document.getElementById('fallback');
+  var openBtn   = document.getElementById('open-btn');
+  var closeBtn  = document.getElementById('close-btn');
 
-  // ── PWA service worker ──
   if ('serviceWorker' in navigator)
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
 
-  // ── Scan cooldown ──
-  let lastUrl = '', lastTime = 0, pdfTask = null;
-  const COOLDOWN = 3500;
+  var lastUrl = '', lastTime = 0, pdfTask = null;
+  var COOLDOWN = 3500;
 
-  // ── html5-qrcode init ──
-  const scanner = new Html5Qrcode('qr-reader');
+  function normalizeUrl(href) {
+    var m = href.match(/^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+)$/);
+    if (m) return 'https://raw.githubusercontent.com/' + m[1] + '/' + m[2] + '/' + m[3] + '/' + m[4];
+    return href;
+  }
 
+  var scanner = new Html5Qrcode('qr-reader');
   scanner.start(
     { facingMode: 'environment' },
-    {
-      fps: 15,
-      qrbox: { width: 250, height: 250 },
+    { fps: 15, qrbox: { width: 240, height: 240 },
       experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-      rememberLastUsedCamera: true,
-    },
+      rememberLastUsedCamera: true },
     onDetected,
-    ()=>{}
-  ).then(()=>{
-    setStatus('<span class="dot"></span>Buscando código QR…','');
-  }).catch(err=>{
-    console.error(err);
-    setStatus('Sin acceso a la cámara','err');
-  });
+    function() {}
+  )
+  .then(function() { setStatus('<span class="dot"></span>Scanning&hellip;', ''); })
+  .catch(function() { setStatus('Camera access denied', 'err'); });
 
   function onDetected(raw) {
-    const now = Date.now();
+    var now = Date.now();
     if (raw === lastUrl && now - lastTime < COOLDOWN) return;
     lastUrl = raw; lastTime = now;
 
-    let url;
+    var url;
     try {
-      const u = new URL(raw.trim());
-      if (u.protocol !== 'http:' && u.protocol !== 'https:') throw 0;
-      url = u.href;
-    } catch {
-      setStatus('QR sin URL válida','err');
-      setTimeout(()=>setStatus('<span class="dot"></span>Buscando…',''), 2000);
+      var u = new URL(raw.trim());
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error();
+      url = normalizeUrl(u.href);
+    } catch(e) {
+      setStatus('Invalid QR &mdash; no URL found', 'err');
+      setTimeout(function() { setStatus('<span class="dot"></span>Scanning&hellip;', ''); }, 2000);
       return;
     }
 
-    // Visual flash + vibrate
     sf.classList.remove('ok');
     void sf.offsetWidth;
     sf.classList.add('ok');
-    setTimeout(()=>sf.classList.remove('ok'), 500);
-    navigator.vibrate?.(70);
+    setTimeout(function() { sf.classList.remove('ok'); }, 500);
+    if (navigator.vibrate) navigator.vibrate(70);
 
-    setStatus('✓ QR detectado — cargando PDF…','ok');
+    setStatus('QR detected &mdash; loading&hellip;', 'ok');
     openPDF(url);
   }
 
-  // ── Open PDF with PDF.js ──
-  async function openPDF(url) {
-    // Reset overlay
+  function openPDF(url) {
     loader.classList.remove('hide');
     fallback.classList.remove('show');
     pdfScroll.innerHTML = '';
     openBtn.href = url;
-
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
 
-    if (pdfTask) { try{ pdfTask.destroy(); }catch{} pdfTask=null; }
+    if (pdfTask) { try { pdfTask.destroy(); } catch(e) {} pdfTask = null; }
 
-    try {
-      pdfTask = pdfjsLib.getDocument({
-        url,
-        withCredentials: false,
-        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-        cMapPacked: true,
-      });
+    pdfTask = pdfjsLib.getDocument({
+      url: url,
+      withCredentials: false,
+      cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+      cMapPacked: true,
+    });
 
-      const pdf = await pdfTask.promise;
+    pdfTask.promise.then(function(pdf) {
       loader.classList.add('hide');
-
-      // Viewport width = scroll area width (minus padding)
-      const containerW = pdfScroll.clientWidth || window.innerWidth;
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page     = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1 });
-        const scale    = (containerW - 24) / viewport.width;
-        const scaled   = page.getViewport({ scale });
-
-        const canvas   = document.createElement('canvas');
-        canvas.className = 'pdf-page-canvas';
-        canvas.width   = scaled.width;
-        canvas.height  = scaled.height;
-        pdfScroll.appendChild(canvas);
-
-        await page.render({
-          canvasContext: canvas.getContext('2d'),
-          viewport: scaled,
-        }).promise;
+      var containerW = pdfScroll.clientWidth || window.innerWidth;
+      var pagePromise = Promise.resolve();
+      for (var i = 1; i <= pdf.numPages; i++) {
+        (function(pageNum) {
+          pagePromise = pagePromise.then(function() {
+            return pdf.getPage(pageNum).then(function(page) {
+              var viewport = page.getViewport({ scale: 1 });
+              var scale    = (containerW - 8) / viewport.width;
+              var scaled   = page.getViewport({ scale: scale });
+              var canvas   = document.createElement('canvas');
+              canvas.className = 'pdf-page-canvas';
+              canvas.width     = scaled.width;
+              canvas.height    = scaled.height;
+              pdfScroll.appendChild(canvas);
+              return page.render({ canvasContext: canvas.getContext('2d'), viewport: scaled }).promise;
+            });
+          });
+        })(i);
       }
-
-    } catch(err) {
-      console.error('PDF.js error:', err);
+      return pagePromise;
+    }).catch(function(err) {
+      console.error('PDF error:', err);
       loader.classList.add('hide');
       fallback.classList.add('show');
-    }
+    });
   }
 
   function closePDF() {
     overlay.classList.remove('open');
-    if (pdfTask) { try{ pdfTask.destroy(); }catch{} pdfTask=null; }
+    if (pdfTask) { try { pdfTask.destroy(); } catch(e) {} pdfTask = null; }
     pdfScroll.innerHTML = '';
     document.body.style.overflow = '';
     lastTime = Date.now();
-    setStatus('<span class="dot"></span>Listo para escanear','');
+    setStatus('<span class="dot"></span>Scanning&hellip;', '');
   }
 
   closeBtn.addEventListener('click', closePDF);
